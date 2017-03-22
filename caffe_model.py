@@ -5,16 +5,14 @@ import json
 import base64
 from cStringIO import StringIO
 import sys
-caffe_root = '/home/oleksandr/Caffe_GPU/caffe/'
-sys.path.insert(0, caffe_root + 'python')
 import caffe
 
-class CaffeGoogleNetPlaces:
+class ResNetFaces:
 
 	def __init__(self):
 
-		model_def = '/home/oleksandr/Documents/Python_Scripts/KUB/googlenet_places205/deploy_places205.protxt'
-		model_weights = '/home/oleksandr/Documents/Python_Scripts/KUB/googlenet_places205/googlelet_places205_train_iter_2400000.caffemodel'
+		model_def = '/home/ruslan/Documents/FaceProject/ResNet_101_released/ResNet-101-deploy_augmentation.prototxt'
+		model_weights = '/home/ruslan/Documents/FaceProject/ResNet_101_released/snap_resnet__iter_120000.caffemodel'
 
 		self.net = caffe.Net(model_def,      # defines the structure of the model
 		                model_weights,  # contains the trained weights
@@ -24,13 +22,13 @@ class CaffeGoogleNetPlaces:
 		from caffe.proto import caffe_pb2
 		# load the mean for subtraction
 		mean_blob = caffe_pb2.BlobProto()
-		with open('/home/oleksandr/Documents/Python_Scripts/KUB/hybridCNN_mean.binaryproto') as f:
+		with open('/home/ruslan/Documents/FaceProject/ResNet_101_released/average_face.bin') as f:
 		    mean_blob.ParseFromString(f.read())
 		mu = np.asarray(mean_blob.data, dtype=np.float32).reshape(
 		    (mean_blob.channels, mean_blob.height, mean_blob.width))
 
 		# mu = np.load(caffe_root + 'python/caffe/imagenet/ilsvrc_2012_mean.npy')
-		mu = mu.mean(1).mean(1)  # average over pixels to obtain the mean (BGR) pixel values
+		# mu = mu.mean(1).mean(1)  # average over pixels to obtain the mean (BGR) pixel values
 		#print 'mean-subtracted values:', zip('BGR', mu)
 
 		# create transformer for the input called 'data'
@@ -51,7 +49,7 @@ class CaffeGoogleNetPlaces:
 
 	def get_features(self, img):
 
-		caffe.set_mode_gpu()
+		caffe.set_mode_cpu()
         
 		#image = caffe.io.load_image(image_path)
 		image64 = img.get('photo').decode('base64')
@@ -64,13 +62,12 @@ class CaffeGoogleNetPlaces:
 
 		output = self.net.forward()
 
-		return [(output['prob'][0]).argmax(), self.net.blobs['pool5/7x7_s1'].data.squeeze()]
-
+		return self.net.blobs['pool5'].data.squeeze()
 
 
 	def get_features_path(self, img):
 
-		caffe.set_mode_gpu()
+		caffe.set_mode_cpu()
         
 		image = caffe.io.load_image(img)
 
@@ -78,4 +75,4 @@ class CaffeGoogleNetPlaces:
 
 		output = self.net.forward()
 
-		return [(output['prob'][0]).argmax(), self.net.blobs['pool5/7x7_s1'].data.squeeze()]
+		return self.net.blobs['pool5'].data.squeeze()
